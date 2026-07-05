@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "SELINOVA-TECH Website"
+version = "1.0.0"
+id = "artifacts/selinova-web"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22977
+
+[services.development]
+run = "pnpm --filter @workspace/selinova-web run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/selinova-web", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/selinova-web/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22977"
+BASE_PATH = "/"
