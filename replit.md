@@ -1,45 +1,61 @@
-# [Project name]
+# SELINOVA-TECH — Marktplatz
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Österreichischer Marktplatz für den Kauf und die Miete professioneller Webseiten und Software-Assets (E-Commerce, SaaS, Blogs, Apps, CRM-Tools, Landing Pages, Portfolios).
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/api-server run dev` — API-Server starten (Port 8080, via Proxy auf /api)
+- `pnpm --filter @workspace/selinova-web run dev` — Frontend starten (via Workflow, Port dynamisch)
+- `pnpm run typecheck` — vollständiger Typecheck über alle Pakete
+- `pnpm run build` — Typecheck + Build aller Pakete
+- `pnpm --filter @workspace/api-spec run codegen` — API-Hooks und Zod-Schemas aus OpenAPI neu generieren
+- `pnpm --filter @workspace/db run push` — DB-Schema pushen (nur dev)
+- Required env: `DATABASE_URL` — Postgres-Verbindungsstring
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Frontend: React + Vite, Tailwind CSS, Framer Motion, Wouter (Routing), TanStack React Query
+- API: Express 5, OpenAPI-first, Orval codegen
+- DB: PostgreSQL + Drizzle ORM, Drizzle-Zod
+- Validation: Zod (zod/v4)
 
-## Where things live
+## Architektur
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — OpenAPI-Spec (Source of Truth für alle API-Verträge)
+- `lib/api-client-react/src/generated/` — generierte React Query Hooks
+- `lib/api-zod/src/generated/` — generierte Zod-Schemas (für Server-Validierung)
+- `lib/db/src/schema/listings.ts` — DB-Schema: categories, subcategories, listings (Enums: listing_type, listing_status)
+- `artifacts/api-server/src/routes/` — Express-Route-Handler (listings.ts, categories.ts, health.ts)
+- `artifacts/selinova-web/src/pages/` — React-Seiten: HomePage, MarketplacePage, ListingDetailPage, CategoryPage
+- `artifacts/selinova-web/src/components/marketplace/` — ListingCard, FilterSidebar, SearchBar, CategoryGrid, StatsStrip
 
-## Architecture decisions
+## Produkt
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Marktplatz-Struktur**: willhaben.at-Stil — Navbar mit Suche, Kategorie-Nav mit Live-Zählern, Filter-Sidebar, Listing-Grid
+- **Kategorien**: E-Commerce/Webshop, Corporate Website, SaaS Platform, Blog/Content, Mobile/Web App, CRM/ERP, Landing Page, Portfolio
+- **Listing-Typen**: Kaufen (buy) | Mieten (rent)
+- **Farben**: Turquoise #0D9488 (primary), Emerald #10B981 (accent), Lime #84CC16, Hintergrund #F8FAFB
+- **Routes**: / · /marktplatz · /kaufen · /mieten · /featured · /listing/:id · /kategorie/:slug
+- **22 Seed-Listings** mit realistischen österreichischen Marketplace-Daten
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Kein Emoji in der gesamten UI
+- High-Tier Senior Fullstack Coding — keine Placeholder, kein Newbie-Design
+- willhaben.at als UX-Referenz
+- Logo-Video: attached_assets/download_20260614_135906_0000_1783241609712.mp4 (noch in Hero einbetten)
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- URL-Query-Parameter `type` darf nie als leerer String an die API gesendet werden — immer `|| undefined` verwenden
+- `pnpm run typecheck:libs` vor API-Typecheck ausführen, wenn DB-Schema geändert wurde (sonst stale declarations)
+- Subcategory-Filter ist slug-basiert (nicht label-basiert) — FilterSidebar nutzt API-Daten direkt
+- Orval codegen: `info.title` in openapi.yaml nicht ändern (bricht generierte Dateinamen)
 
 ## Pointers
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- DB-Schema: `lib/db/src/schema/listings.ts`
+- API-Spec: `lib/api-spec/openapi.yaml`
+- Frontend-Theme: `artifacts/selinova-web/src/index.css`
+- Logo-Video: `attached_assets/download_20260614_135906_0000_1783241609712.mp4`

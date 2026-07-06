@@ -3,20 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SELINOVA-TECH Marketplace API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: listings
+    description: Marketplace listings
+  - name: categories
+    description: Categories and subcategories
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +27,166 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /listings:
+    get:
+      operationId: getListings
+      tags: [listings]
+      summary: Search and filter marketplace listings
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: subcategory
+          in: query
+          schema: { type: string }
+        - name: type
+          in: query
+          schema: { type: string, enum: [buy, rent] }
+        - name: minPrice
+          in: query
+          schema: { type: number }
+        - name: maxPrice
+          in: query
+          schema: { type: number }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [newest, price_asc, price_desc, popular] }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 24 }
+      responses:
+        "200":
+          description: Listing results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingPage"
+    post:
+      operationId: createListing
+      tags: [listings]
+      summary: Create a new listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ListingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+
+  /listings/featured:
+    get:
+      operationId: getFeaturedListings
+      tags: [listings]
+      summary: Get featured listings for homepage
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 8 }
+      responses:
+        "200":
+          description: Featured listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Listing"
+
+  /listings/stats:
+    get:
+      operationId: getMarketplaceStats
+      tags: [listings]
+      summary: Marketplace aggregate statistics
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketplaceStats"
+
+  /listings/{id}:
+    get:
+      operationId: getListing
+      tags: [listings]
+      summary: Get a single listing by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Listing detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateListing
+      tags: [listings]
+      summary: Update a listing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ListingUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+    delete:
+      operationId: deleteListing
+      tags: [listings]
+      summary: Delete a listing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /categories:
+    get:
+      operationId: getCategories
+      tags: [categories]
+      summary: Get all categories with their subcategories
+      responses:
+        "200":
+          description: Categories list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +194,115 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    Listing:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - categorySlug
+        - subcategorySlug
+        - type
+        - price
+        - pricePeriod
+        - status
+        - isFeatured
+        - views
+        - techStack
+        - features
+        - createdAt
+        - updatedAt
+      properties:
+        id:          { type: integer }
+        title:       { type: string }
+        description: { type: string }
+        categorySlug:    { type: string }
+        subcategorySlug: { type: string }
+        categoryName:    { type: ["string","null"] }
+        subcategoryName: { type: ["string","null"] }
+        type:        { type: string, enum: [buy, rent] }
+        price:       { type: number }
+        pricePeriod: { type: string }
+        status:      { type: string, enum: [active, sold, rented] }
+        isFeatured:  { type: boolean }
+        views:       { type: integer }
+        techStack:   { type: array, items: { type: string } }
+        features:    { type: array, items: { type: string } }
+        createdAt:   { type: string }
+        updatedAt:   { type: string }
+
+    ListingInput:
+      type: object
+      required: [title, description, categorySlug, subcategorySlug, type, price, pricePeriod]
+      properties:
+        title:           { type: string, minLength: 3 }
+        description:     { type: string, minLength: 10 }
+        categorySlug:    { type: string }
+        subcategorySlug: { type: string }
+        type:            { type: string, enum: [buy, rent] }
+        price:           { type: number, minimum: 0 }
+        pricePeriod:     { type: string }
+        techStack:       { type: array, items: { type: string } }
+        features:        { type: array, items: { type: string } }
+        isFeatured:      { type: boolean }
+
+    ListingUpdate:
+      type: object
+      properties:
+        title:           { type: string }
+        description:     { type: string }
+        categorySlug:    { type: string }
+        subcategorySlug: { type: string }
+        type:            { type: string, enum: [buy, rent] }
+        price:           { type: number }
+        pricePeriod:     { type: string }
+        status:          { type: string, enum: [active, sold, rented] }
+        techStack:       { type: array, items: { type: string } }
+        features:        { type: array, items: { type: string } }
+        isFeatured:      { type: boolean }
+
+    ListingPage:
+      type: object
+      required: [items, total, page, limit]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Listing"
+        total:  { type: integer }
+        page:   { type: integer }
+        limit:  { type: integer }
+
+    MarketplaceStats:
+      type: object
+      required: [totalListings, totalBuy, totalRent, totalFeatured, averagePrice]
+      properties:
+        totalListings:  { type: integer }
+        totalBuy:       { type: integer }
+        totalRent:      { type: integer }
+        totalFeatured:  { type: integer }
+        averagePrice:   { type: number }
+
+    Subcategory:
+      type: object
+      required: [id, slug, name, categorySlug]
+      properties:
+        id:           { type: integer }
+        slug:         { type: string }
+        name:         { type: string }
+        categorySlug: { type: string }
+
+    Category:
+      type: object
+      required: [id, slug, name, icon, subcategories]
+      properties:
+        id:            { type: integer }
+        slug:          { type: string }
+        name:          { type: string }
+        icon:          { type: string }
+        subcategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Subcategory"
