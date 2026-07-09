@@ -15,6 +15,7 @@ import {
   DeleteListingParams,
   GetFeaturedListingsQueryParams,
 } from "@workspace/api-zod";
+import { writeLimiter, requireApiKey } from "../middlewares/security";
 
 const router: IRouter = Router();
 
@@ -35,6 +36,8 @@ async function enrichListing(listing: typeof listingsTable.$inferSelect) {
     subcategoryName: sub?.name ?? null,
   };
 }
+
+// ── Public read endpoints ────────────────────────────────────────────────────
 
 // GET /listings
 router.get("/listings", async (req, res) => {
@@ -81,27 +84,6 @@ router.get("/listings", async (req, res) => {
   res.json({ items: enriched, total: Number(total), page: page ?? 1, limit: limit ?? 24 });
 });
 
-// POST /listings
-router.post("/listings", async (req, res) => {
-  const parsed = CreateListingBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const data = parsed.data;
-  const [row] = await db
-    .insert(listingsTable)
-    .values({
-      ...data,
-      price: String(data.price),
-      techStack: data.techStack ?? [],
-      features: data.features ?? [],
-      isFeatured: data.isFeatured ?? false,
-    })
-    .returning();
-  res.status(201).json(await enrichListing(row));
-});
-
 // GET /listings/featured
 router.get("/listings/featured", async (req, res) => {
   const parsed = GetFeaturedListingsQueryParams.safeParse(req.query);
@@ -140,13 +122,35 @@ router.get("/listings/:id", async (req, res) => {
   if (!parsed.success) { res.status(400).json({ error: "Invalid id" }); return; }
   const [row] = await db.select().from(listingsTable).where(eq(listingsTable.id, parsed.data.id));
   if (!row) { res.status(404).json({ error: "Not found" }); return; }
-  // Increment views
   await db.update(listingsTable).set({ views: row.views + 1 }).where(eq(listingsTable.id, row.id));
   res.json(await enrichListing({ ...row, views: row.views + 1 }));
 });
 
+// ── Protected write endpoints (API key required) ─────────────────────────────
+
+// POST /listings
+router.post("/listings", writeLimiter, requireApiKey, async (req, res) => {
+  const parsed = CreateListingBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const data = parsed.data;
+  const [row] = await db
+    .insert(listingsTable)
+    .values({
+      ...data,
+      price: String(data.price),
+      techStack: data.techStack ?? [],
+      features: data.features ?? [],
+      isFeatured: data.isFeatured ?? false,
+    })
+    .returning();
+  res.status(201).json(await enrichListing(row));
+});
+
 // PATCH /listings/:id
-router.patch("/listings/:id", async (req, res) => {
+router.patch("/listings/:id", writeLimiter, requireApiKey, async (req, res) => {
   const idParsed = UpdateListingParams.safeParse({ id: Number(req.params.id) });
   if (!idParsed.success) { res.status(400).json({ error: "Invalid id" }); return; }
   const bodyParsed = UpdateListingBody.safeParse(req.body);
@@ -175,7 +179,7 @@ router.patch("/listings/:id", async (req, res) => {
 });
 
 // DELETE /listings/:id
-router.delete("/listings/:id", async (req, res) => {
+router.delete("/listings/:id", writeLimiter, requireApiKey, async (req, res) => {
   const parsed = DeleteListingParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) { res.status(400).json({ error: "Invalid id" }); return; }
   await db.delete(listingsTable).where(eq(listingsTable.id, parsed.data.id));
