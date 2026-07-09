@@ -1,0 +1,15 @@
+# Ignore Replit-specific files
+.replit
+replit.nix
+.upm/
+.cache/
+.local/
+.agents/
+
+# Ignore build artifacts from other packages
+artifacts/api-server/dist/
+artifacts/mockup-sandbox/
+
+# Ignore test and dev files
+*.test.ts
+*.spec.ts

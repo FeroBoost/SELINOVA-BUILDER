@@ -6,6 +6,12 @@ import { HomePage } from '@/pages/HomePage';
 import { MarketplacePage } from '@/pages/MarketplacePage';
 import { ListingDetailPage } from '@/pages/ListingDetailPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { ImpressumPage } from '@/pages/ImpressumPage';
+import { AGBPage } from '@/pages/AGBPage';
+import { DatenschutzPage } from '@/pages/DatenschutzPage';
+import { RechtlichesPage } from '@/pages/RechtlichesPage';
+import { MietvertragPage } from '@/pages/MietvertragPage';
+import { KaufvertragPage } from '@/pages/KaufvertragPage';
 import { IntroScreen } from '@/components/IntroScreen';
 
 const queryClient = new QueryClient();
@@ -21,8 +27,12 @@ function RedirectWithQuery({ to }: { to: string }) {
 function Router() {
   return (
     <Switch>
+      {/* ── Main pages ── */}
       <Route path="/" component={HomePage} />
       <Route path="/marktplatz" component={MarketplacePage} />
+      <Route path="/listing/:id" component={ListingDetailPage} />
+
+      {/* ── Redirects ── */}
       <Route path="/kaufen">
         <RedirectWithQuery to="/marktplatz?type=buy" />
       </Route>
@@ -32,7 +42,15 @@ function Router() {
       <Route path="/kategorie/:slug">
         {(params) => <RedirectWithQuery to={`/marktplatz?category=${params.slug}`} />}
       </Route>
-      <Route path="/listing/:id" component={ListingDetailPage} />
+
+      {/* ── Legal pages ── */}
+      <Route path="/impressum" component={ImpressumPage} />
+      <Route path="/agb" component={AGBPage} />
+      <Route path="/datenschutz" component={DatenschutzPage} />
+      <Route path="/rechtliches" component={RechtlichesPage} />
+      <Route path="/rechtliches/mietvertrag" component={MietvertragPage} />
+      <Route path="/rechtliches/kaufvertrag" component={KaufvertragPage} />
+
       <Route component={NotFoundPage} />
     </Switch>
   );

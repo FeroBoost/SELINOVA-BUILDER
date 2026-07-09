@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "SELINOVA-TECH Website"
+title = "SELINOVA-TECH 2.01"
 version = "1.0.0"
 id = "artifacts/selinova-web"
 router = "path"
